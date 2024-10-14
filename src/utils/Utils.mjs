@@ -19,6 +19,7 @@ class Utils {
     this.link = new Link(); // Set Link class
     this.discordReply = new DiscordReply(); // Set DiscordReply class
     this.webhookLogger = new WebhookLogger(); // Set WebhookLogger class
+    this.quiz = new QuizHandler(); // Quiz feature functions
     this.discordAnsiCodes = discordAnsiCodes;
     this.chatSeparator =
       "-----------------------------------------------------";
@@ -527,6 +528,198 @@ const logger = createLogger({
     }),
   ],
 });
+
+class QuizHandler {
+  constructor() {
+    this.isActive = false;
+    this.activeQuiz = {};
+  }
+
+  /**
+   * @param {import("../mineflayer/Bot.mjs").default} bot
+   * @param {Object} quiz
+   * @returns
+   */
+  startQuiz(bot, quiz) {
+    this.isActive = true;
+    this.activeQuiz = quiz;
+    const multiLineMessage = this.addSpaces(bot.username, [
+      ".",
+      ` :thinking: A QUIZ has been started by ${this.activeQuiz.author}!`,
+      ` :typing: Send your guesses in the party chat!`,
+      ` :arrow: ${this.activeQuiz.question}`,
+    ]);
+    bot.chat("/pc " + multiLineMessage.join(""));
+  }
+
+  /**
+   * @param {import("../mineflayer/Bot.mjs").default} bot
+   * @param {String} initiator
+   * @returns
+   */
+  cancelQuiz(bot, initiator) {
+    const multiLineMessage = this.addSpaces(bot.username, [
+      ".",
+      ` :no: The QUIZ has been cancelled by ${initiator}!`,
+      ` :arrow: The answer was: ${this.activeQuiz.answer}`
+    ]);
+    bot.chat("/pc " + multiLineMessage.join(""));
+    this.isActive = false;
+    clearInterval(this.activeQuiz.intervalID);
+    clearTimeout(this.activeQuiz.timeoutID);
+    this.activeQuiz = {};
+  }
+
+  /**
+   * @param {import("../mineflayer/Bot.mjs").default} bot
+   * @param {String} winner
+   * @returns
+   */
+  endQuiz(bot, winner) {
+    const timeTaken =
+      Math.round(Date.now() / 10 - this.activeQuiz.startedAt / 10) / 100;
+    const multiLineMessage = this.addSpaces(bot.username, [
+      ".",
+      ` :thinking: The QUIZ was solved in ${timeTaken}s!`,
+      ` WINNER: :star: ${winner} :star:`,
+      ` :arrow: The answer was: ${this.activeQuiz.answer}`,
+    ]);
+    bot.chat("/pc " + multiLineMessage.join(""));
+    this.isActive = false;
+    clearInterval(this.activeQuiz.intervalID);
+    clearTimeout(this.activeQuiz.timeoutID);
+    this.activeQuiz = {};
+  }
+
+  /**
+   * @param {import("../mineflayer/Bot.mjs").default} bot
+   * @returns
+   */
+  expiredQuiz(bot) {
+    const multiLineMessage = this.addSpaces(bot.username, [
+      ".",
+      ` :no: The QUIZ has timed out after ${Math.round(this.activeQuiz.duration / 1000)}s!`,
+      `    Nobody guessed correctly in time!`,
+      ` :arrow: The answer was: ${this.activeQuiz.answer}`,
+    ]);
+    bot.chat("/pc " + multiLineMessage.join(""));
+    this.isActive = false;
+    clearInterval(this.activeQuiz.intervalID);
+    this.activeQuiz = {};
+  }
+
+  /**
+   * @param {import("../mineflayer/Bot.mjs").default} bot
+   * @returns
+   */
+  intervalReminder(bot) {
+    const timeLeft = Math.round(
+      (this.activeQuiz.duration - (Date.now() - this.activeQuiz.startedAt)) /
+        1000,
+    );
+    const multiLineMessage = this.addSpaces(bot.username, [
+      ".",
+      ` :thinking: There is an active QUIZ by ${this.activeQuiz.author}!`,
+      ` :typing: Send your guesses in party chat! ${timeLeft}s left!`,
+      ` :arrow: ${this.activeQuiz.question}`,
+    ]);
+    bot.chat("/pc " + multiLineMessage.join(""));
+  }
+
+  /**
+   * @param {String} message
+   * @returns {Array<String>}
+   */
+  checkAnswer(message) {
+    // answers are not case sensitive and are accepted with or without spaces, like in hypixel's Build Battle: Guess the Build
+    return (
+      message.trim().toLowerCase() ===
+      this.activeQuiz.answer.toLowerCase().replace(/ /g, "")
+    );
+  }
+
+  /**
+   * @param {String} username
+   * @param {Array<String>} lines
+   * @returns {Array<String>}
+   */
+  addSpaces(username, lines) {
+    if (lines.length < 2) return lines;
+    const firstLine = `Party > [MVP++] ${username}: `;
+    lines[0] += " ".repeat(
+      (this.charWidthPx.chatWindow - this.pixelWidth(firstLine + lines[0])) /
+        this.charWidthPx.space,
+    );
+    for (let i = 1; i < lines.length - 1; i++) {
+      lines[i] += " ".repeat(
+        (this.charWidthPx.chatWindow - this.pixelWidth(lines[i])) /
+          this.charWidthPx.space -
+          1,
+      );
+    }
+    return lines;
+  }
+
+  /**
+   * @param {String} message
+   * @returns {Number}
+   */
+  pixelWidth(message) {
+    let pxwidth = 0;
+    // get emote widths
+    Object.keys(this.charWidthPx.emotes).forEach((key) => {
+      const before = message.length;
+      message = message.replaceAll(key, "");
+      pxwidth +=
+        ((before - message.length) / key.length) * this.charWidthPx.emotes[key];
+    });
+    // get width of string
+    message.split("").forEach((char) => {
+      let found = Object.keys(this.charWidthPx.chars).find((key) => {
+        return this.charWidthPx.chars[key].includes(char);
+      });
+      if (found) pxwidth += parseInt(found);
+    });
+    return pxwidth;
+  }
+
+  // width of characters in minecraft's default font in pixels (including 1px spacing between characters)
+  charWidthPx = Object.freeze({
+    chatWindow: 320,
+    space: 4,
+    emotes: {
+      "<3": 8,
+      ":star:": 8,
+      ":yes:": 8,
+      ":no:": 8,
+      ":java:": 7,
+      ":arrow:": 8,
+      ":shrug:": 49,
+      ":tableflip:": 52,
+      "o/": 26,
+      ":123:": 18,
+      ":totem:": 16,
+      ":typing:": 13,
+      ":maths:": 53,
+      ":snail:": 17,
+      ":thinking:": 28,
+      ":gimme:": 40,
+      ":wizard:": 45,
+      ":pvp:": 7,
+      ":peace:": 8,
+      ":oof:": 21,
+      ":puffer:": 35,
+    },
+    chars: {
+      2: "i!:;'|.,",
+      3: "l`",
+      4: 'tI*(){}[]" ',
+      5: "fk<>",
+      6: "0123456789abcdeghjmnopqrsuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ#$%^&-_+=?/\\",
+      7: "@~",
+    },
+  });
+}
 
 class Debug {
   constructor(debug = false) {

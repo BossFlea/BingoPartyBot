@@ -143,6 +143,11 @@ export default {
     } else if (RegExp(/^Party > /g).test(message.toString())) {
       let command = message.toString().split(": ").slice(1).join(": ");
       let args = command.split(" ");
+      if (bot.utils.quiz.isActive && bot.utils.quiz.checkAnswer(command))
+        return bot.utils.quiz.endQuiz(
+          bot,
+          Utils.getUsername(message.toString()),
+        );
       // Check if the message is blacklisted and kick if so
       let kickList = await bot.utils.getKickList();
       if (kickList.some((e) => args[0].startsWith(e))) {
