@@ -561,7 +561,7 @@ class QuizHandler {
     const multiLineMessage = this.addSpaces(bot.username, [
       ".",
       ` :no: The QUIZ has been cancelled by ${initiator}!`,
-      ` :arrow: The answer was: ${this.activeQuiz.answer}`
+      ` :arrow: The answer was: ${this.activeQuiz.answer}`,
     ]);
     bot.chat("/pc " + multiLineMessage.join(""));
     this.isActive = false;
@@ -628,7 +628,7 @@ class QuizHandler {
 
   /**
    * @param {String} message
-   * @returns {Array<String>}
+   * @returns {Boolean}
    */
   checkAnswer(message) {
     // answers are not case sensitive and are accepted with or without spaces, like in hypixel's Build Battle: Guess the Build
@@ -673,7 +673,7 @@ class QuizHandler {
       pxwidth +=
         ((before - message.length) / key.length) * this.charWidthPx.emotes[key];
     });
-    // get width of string
+    // get width of the remaining string
     message.split("").forEach((char) => {
       let found = Object.keys(this.charWidthPx.chars).find((key) => {
         return this.charWidthPx.chars[key].includes(char);
@@ -931,7 +931,7 @@ const discordAnsiCodes = {
   "§r": "\u001b[0m",
 };
 
-const hypixelEmotes = {
+const hypixelEmotes = Object.freeze({
   "<3": "❤",
   ":star:": "✮",
   ":yes:": "✔",
@@ -953,7 +953,7 @@ const hypixelEmotes = {
   ":peace:": "✌",
   ":oof:": "OOF",
   ":puffer:": "<('O')>",
-}
+});
 
 export default {
   getUsername: function (message) {

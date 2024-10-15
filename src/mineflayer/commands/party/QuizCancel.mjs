@@ -12,13 +12,8 @@ export default {
    * @param {Array<String>} args
    */
   execute: async function (bot, sender, args) {
-    if (!bot.utils.quiz.isActive) {
-      bot.reply(
-        sender,
-        "There isn't an active quiz to cancel!",
-      );
-      return;
-    }
+    if (!bot.utils.quiz.isActive)
+      return bot.reply(sender, "There isn't an active quiz to cancel!");
 
     bot.utils.quiz.cancelQuiz(bot, sender.username);
   },

@@ -14,7 +14,8 @@ export default {
     let msgType = SenderType.Minecraft;
     // does not mess with errors without `catch {}`, purely here to skip to `finally {}` on `return` instead of actually returning
     try {
-      if (message.toString() === bot.utils.chatSeparator) return logMessage = false;
+      if (message.toString() === bot.utils.chatSeparator)
+        return (logMessage = false);
       // Attempt to extract locraw's "server" entry from message and check for limbo
       const locrawServer = message
         .toString()
@@ -23,14 +24,11 @@ export default {
         if (locrawServer !== "limbo" && !bot.config.debug.disableAutoLimbo) {
           bot.chat("/limbo");
         }
-        return logMessage = false;
+        return (logMessage = false);
       }
       let discordReplyId;
       const partyInvite = bot.utils.findValidPartyInvite(message);
-      if (
-        partyInvite &&
-        !bot.utils.getCommandByAlias(bot, "invite").disabled
-      ) {
+      if (partyInvite && !bot.utils.getCommandByAlias(bot, "invite").disabled) {
         setTimeout(() => {
           bot.chat(`/p accept ${partyInvite}`);
         }, bot.utils.minMsgDelay);
@@ -45,12 +43,11 @@ export default {
       }
       if (RegExp(/^From /g).test(message.toString())) {
         let command = message.toString().split(": ").slice(1).join(": "); // !p promo (lets say)
-        if (command.toLowerCase().startsWith("boop!") && !bot.utils.getCommandByAlias(bot, "invite").disabled)
-          // TODO: this needs a settings toggle – if !p invite is disabled, this
-          // shouldn't work either
-          return bot.chat(
-            `/p invite ${Utils.getUsername(message.toString())}`,
-          );
+        if (
+          command.toLowerCase().startsWith("boop!") &&
+          !bot.utils.getCommandByAlias(bot, "invite").disabled
+        )
+          return bot.chat(`/p invite ${Utils.getUsername(message.toString())}`);
         if (command.toLowerCase().includes("help"))
           // TODO: execute "normal" help command here so logic isn't duplicated
           // and doesn't have to be kept in sync manually?
@@ -89,10 +86,10 @@ export default {
             return bot.chat(`/r This command is currently disabled!`);
           //okay i know its not really neccesary but like make the bot more responsive i guess
           //i didnt use bot.reply because it crashes using sender.username which is probalby due to it being right below me vvvvvvvvvvvvvvv
-          
+
           // redact message sent to discord if the command is `!p quiz` (to prevent peeking in #bridge for quiz answer >:) )
           if (command.name.includes("quiz")) logMessage = "redactQuiz";
-          
+
           let sender = Utils.getUsername(message.toString());
           // Extract Hypixel rank from the message
           const match = message
@@ -147,9 +144,7 @@ export default {
         // Check if the message is blacklisted and kick if so
         let kickList = await bot.utils.getKickList();
         if (kickList.some((e) => args[0].startsWith(e))) {
-          return bot.chat(
-            `/p kick ${Utils.getUsername(message.toString())}`,
-          );
+          return bot.chat(`/p kick ${Utils.getUsername(message.toString())}`);
         }
         let commandFound = bot.partyCommands.find(
           (value, key) =>
@@ -176,11 +171,12 @@ export default {
             return command.execute(bot, sender, args.slice(1));
         }
       }
-    } finally { // message logging to console and discord
+    } finally {
+      // message logging to console and discord
       if (!logMessage) return;
       if (bot.config.showMcChat && msgType === SenderType.Minecraft) {
         console.log(message.toAnsi());
-        if (logMessage === "redactQuiz") 
+        if (logMessage === "redactQuiz")
           // send redacted quiz command to discord
           return bot.utils.webhookLogger.addMessage(
             message
